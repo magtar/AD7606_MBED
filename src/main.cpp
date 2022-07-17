@@ -1,42 +1,36 @@
+# include "mbed/mbed.h"
 
-#include "mbed/mbed.h"
+
 using namespace mbed;
 using namespace events;
 using namespace rtos;
 using namespace std::literals::chrono_literals;
 
-SPI fff(PC_3,PC_2,PI_1,PI_0);
-int16_t raw [8];
-int16_t data[8];
-uint8_t j;
+//EventQueue queue(32 * EVENTS_EVENT_SIZE);
+EventQueue queue;
 DigitalOut CONVST(PC_15);
-Thread thread(osPriorityRealtime);
+int16_t raw [8];  
+SPI fff(PC_3,PC_2,PI_1,PI_0);
 
-Ticker t;
-
-void getADC(){
-      while(1){
-      wait_us(1);
+void getADC(){        
       CONVST=1;
       wait_us(3);
       for(int ii=0;ii<8;ii++){
-         raw [ii]=fff.write((int) 0x00);        
-      }        
+         raw [ii]=fff.write((int) 0x00);            
       CONVST=!CONVST;
-   }
+      }
 }
 
-int main(){  
-   
+int main(){   
    fff.frequency(25600000);
-   fff.format(16,0);  
-   CONVST=1;   
-   thread.start(getADC); 
-  /*t.attach(&getADC,1.0); 
-  while (1) {
-        
-        ThisThread::sleep_for(200.0);
-    }
-*/
-return 0;
+   fff.format(16,0);    
+   Thread thread(osPriorityRealtime);
+   thread.start(callback(&queue, &EventQueue::dispatch_forever));
+   Ticker t;  
+   t.attach(queue.event(&getADC),1000us);
+   while(1)
+   {
+      ThisThread::sleep_for(std::chrono::hours::max()); 
+   }
+   
 }
