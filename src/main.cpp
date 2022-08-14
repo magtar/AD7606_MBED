@@ -1,6 +1,4 @@
 # include "mbed/mbed.h"
-
-
 using namespace mbed;
 using namespace events;
 using namespace rtos;
